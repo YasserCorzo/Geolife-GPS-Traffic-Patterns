@@ -95,11 +95,6 @@ users_paths = extract_label_users(original_data_dir)
 
 # filter out users with transportation mode of car / taxi
 users_car = extract_user_transportation_mode(users_paths, 'car')
-<<<<<<< Updated upstream
-# print(users_car)
-=======
->>>>>>> Stashed changes
-
 
 # Path to the new data directory
 new_data_dir = os.path.join(os.getcwd(), 'Geolife Trajectories 1.3/Data_new')
@@ -125,10 +120,6 @@ for user_dir in users_car:
     label_file_path = os.path.join(new_user_dir, 'labels.txt')
     filtered_lines = filter_labels_file(label_file_path)
     create_filtered_labels_file(new_user_dir, filtered_lines)
-
-
-
-# Process those time ranges and match them up with trajectories
 
 
 def filter_china_locations(dataset_path):
@@ -171,5 +162,138 @@ def filter_china_locations(dataset_path):
 # csv file containing datapoints with features driver ID, latitude, longitude, altitude, distance, and speed
 dataset_path = 'data/china_trajectory_dataset.csv'
 filter_china_locations(dataset_path)
+
+
+
+# Process those time ranges and match them up with trajectories
+
+from datetime import datetime
+
+def convert_to_days_since_1899(date_time_str):
+    """
+    Convert the date and time string to the number of days since 12/30/1899.
+    
+    Args:
+    - date_time_str (str): Date and time string in the format 'YYYY-MM-DD HH:MM:SS'
+    
+    Returns:
+    - days_since_1899 (float): Number of days since 12/30/1899
+    """
+    reference_date = datetime(1899, 12, 30)
+    date_time_obj = datetime.strptime(date_time_str, '%Y/%m/%d %H:%M:%S')
+    delta = date_time_obj - reference_date
+    return delta.days + delta.seconds / (24 * 3600)  # Convert seconds to days
+
+
+def update_labels_file(labels_file_path):
+    """
+    Update the labels_new.txt file with start and end times represented as days since 12/30/1899,
+    delete the first row, and separate the two values by a comma.
+    
+    Args:
+    - labels_file_path (str): Path to the labels_new.txt file
+    """
+    with open(labels_file_path, 'r') as file:
+        lines = file.readlines()
+
+    updated_lines = []
+    # Skip the first line (header row)
+    for line in lines[1:]:
+        # Split the line by tab and extract start and end times
+        start_time_str, end_time_str, _ = line.strip().split('\t')
+        
+        # Convert start and end times to days since 12/30/1899
+        start_time_days = convert_to_days_since_1899(start_time_str)
+        end_time_days = convert_to_days_since_1899(end_time_str)
+        
+        # Update the line with start and end times represented as days since 12/30/1899
+        updated_line = f"{start_time_days:.6f},{end_time_days:.6f}\n"
+        updated_lines.append(updated_line)
+
+    # Write the updated lines back to the file
+    with open(labels_file_path, 'w') as file:
+        file.writelines(updated_lines)
+
+
+def update_labels_files_in_directory(directory_path):
+    """
+    Update all labels_new.txt files in the specified directory and its subdirectories.
+    
+    Args:
+    - directory_path (str): Path to the directory containing labels_new.txt files
+    """
+    for root, dirs, files in os.walk(directory_path):
+        for file in files:
+            if file == 'labels_new.txt':
+                labels_file_path = os.path.join(root, file)
+                update_labels_file(labels_file_path)
+
+# Example usage:
+directory_path = "Geolife Trajectories 1.3/Data_new"  # Replace with the path to your directory
+update_labels_files_in_directory(directory_path)
+
+
+
+def filter_plt_files(user_folder):
+    """
+    Filter .plt files in the user's trajectory folder based on data_new.txt files.
+
+    Args:
+    - user_folder (str): Path to the user's folder containing trajectory data.
+    """
+    new_path = os.path.join(user_folder, 'Trajectory_new')
+    os.makedirs(new_path)
+
+    # Iterate through data_new.txt files
+    for data_file_name in os.listdir(user_folder):
+        if data_file_name.startswith("labels_new") and data_file_name.endswith(".txt"):
+            data_file_path = os.path.join(user_folder, data_file_name)
+            start_end_times = []
+
+            # Read start and end times from data_new.txt
+            with open(data_file_path, 'r') as data_file:
+                # next(data_file)  # Skip header
+                for line in data_file:
+                    start, end = line.strip().split(',')
+                    start_end_times.append((float(start), float(end)))
+
+            # Iterate through .plt files
+            trajectory_folder = os.path.join(user_folder, "Trajectory")
+            for plt_file_name in os.listdir(trajectory_folder):
+                if plt_file_name.endswith(".plt"):
+                    plt_file_path = os.path.join(trajectory_folder, plt_file_name)
+                    filtered_rows = []
+
+                    # Filter rows based on start and end times
+                    with open(plt_file_path, 'r') as plt_file:
+                        for i in range(6):
+                            next(plt_file)
+                        for line in plt_file:
+                            parts = line.strip().split(',')
+                            timestamp = float(parts[-3])
+                            for start, end in start_end_times:
+                                if start <= timestamp <= end:
+                                    filtered_rows.append(line)
+                                    break
+                    
+                    # Write filtered rows to a new .plt file
+                    if filtered_rows:
+                        filtered_plt_file_path = os.path.join(new_path, f"{plt_file_name[:-4]}_filtered.plt")
+                        with open(filtered_plt_file_path, 'w') as filtered_plt_file:
+                            filtered_plt_file.writelines(filtered_rows)
+
+# Example usage:
+# user_folder = 'Geolife Trajectories 1.3/Data_new/010'
+directory_path = "Geolife Trajectories 1.3/Data_new"
+# for user_folder in directory_path:
+    # filter_plt_files(user_folder)
+    # print(user_folder)
+
+
+for item in os.listdir(directory_path):
+    user_folder = os.path.join(directory_path, item)
+    # print(item_path)
+    filter_plt_files(user_folder)
+
 
 

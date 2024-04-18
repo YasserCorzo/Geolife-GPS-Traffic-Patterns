@@ -1,9 +1,11 @@
 import geopandas as gpd
 import os
-import shutil
 import numpy as np
 import pandas as pd
+
+from datetime import datetime
 from shapely.geometry import Point, MultiPolygon, Polygon
+
 
 def extract_label_users(dataset_dir):
     '''
@@ -26,6 +28,7 @@ def extract_label_users(dataset_dir):
             res.append(user_dir_path)
     
     return res
+
 
 def extract_user_transportation_mode(users_paths, transportation_mode):
     '''
@@ -52,7 +55,6 @@ def extract_user_transportation_mode(users_paths, transportation_mode):
     return res
 
 
-
 def filter_labels_file(label_file_path):
     """
     Filter the lines in the labels.txt file to only include those with 'car' or 'taxi' as the transportation mode.
@@ -73,6 +75,7 @@ def filter_labels_file(label_file_path):
                 filtered_lines.append(line)
     return filtered_lines
 
+
 def create_filtered_labels_file(user_dir, filtered_lines):
     """
     Create a new labels_new.txt file in the user directory and write the filtered lines into it.
@@ -87,47 +90,12 @@ def create_filtered_labels_file(user_dir, filtered_lines):
             file.write(line)
 
 
-# Path to the original data directory
-original_data_dir = os.path.join(os.getcwd(), 'Geolife Trajectories 1.3/Data')
-
-# filter out users with label file
-users_paths = extract_label_users(original_data_dir)
-
-# filter out users with transportation mode of car / taxi
-users_car = extract_user_transportation_mode(users_paths, 'car')
-
-# Path to the new data directory
-new_data_dir = os.path.join(os.getcwd(), 'Geolife Trajectories 1.3/Data_new')
-
-# Assuming users_car contains paths to user directories with car or taxi transportation mode
-for user_dir in users_car:
-    # Get the relative path within the original data directory
-    relative_path = os.path.relpath(user_dir, original_data_dir)
-    
-    # Create the corresponding directory structure in the new data directory
-    new_user_dir = os.path.join(new_data_dir, relative_path)
-    os.makedirs(new_user_dir, exist_ok=True)
-    
-    # Copy everything from the original directory to the new directory
-    for item in os.listdir(user_dir):
-        item_path = os.path.join(user_dir, item)
-        if os.path.isfile(item_path):
-            shutil.copy(item_path, new_user_dir)
-        elif os.path.isdir(item_path):
-            shutil.copytree(item_path, os.path.join(new_user_dir, item))
-    
-    # Filter and create the new labels file
-    label_file_path = os.path.join(new_user_dir, 'labels.txt')
-    filtered_lines = filter_labels_file(label_file_path)
-    create_filtered_labels_file(new_user_dir, filtered_lines)
-
-
 def filter_china_locations(dataset_path):
     """
     Filters trajectories that have locations in China
 
     [input]
-        - dataset_path (str): path to file containing trajectory dataset with features driver ID, latitude, longitude, altitude, distance, and speed
+        - dataset_path (str): path to file containing trajectory dataset with features driver ID, longitude, latitude, distance, and speed
     
     [output]
         - dataset (pd.Dataframe): pandas dataframe containing filtered trajectories
@@ -159,16 +127,8 @@ def filter_china_locations(dataset_path):
 
     return df_filtered
 
-# csv file containing datapoints with features driver ID, latitude, longitude, altitude, distance, and speed
-dataset_path = 'data/china_trajectory_dataset.csv'
-filter_china_locations(dataset_path)
-
-
 
 # Process those time ranges and match them up with trajectories
-
-from datetime import datetime
-
 def convert_to_days_since_1899(date_time_str):
     """
     Convert the date and time string to the number of days since 12/30/1899.
@@ -228,11 +188,6 @@ def update_labels_files_in_directory(directory_path):
                 labels_file_path = os.path.join(root, file)
                 update_labels_file(labels_file_path)
 
-# Example usage:
-directory_path = "Geolife Trajectories 1.3/Data_new"  # Replace with the path to your directory
-update_labels_files_in_directory(directory_path)
-
-
 
 def filter_plt_files(user_folder):
     """
@@ -281,19 +236,3 @@ def filter_plt_files(user_folder):
                         filtered_plt_file_path = os.path.join(new_path, f"{plt_file_name[:-4]}_filtered.plt")
                         with open(filtered_plt_file_path, 'w') as filtered_plt_file:
                             filtered_plt_file.writelines(filtered_rows)
-
-# Example usage:
-# user_folder = 'Geolife Trajectories 1.3/Data_new/010'
-directory_path = "Geolife Trajectories 1.3/Data_new"
-# for user_folder in directory_path:
-    # filter_plt_files(user_folder)
-    # print(user_folder)
-
-
-for item in os.listdir(directory_path):
-    user_folder = os.path.join(directory_path, item)
-    # print(item_path)
-    filter_plt_files(user_folder)
-
-
-

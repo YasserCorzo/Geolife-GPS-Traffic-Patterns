@@ -239,7 +239,15 @@ def filter_plt_files(user_folder):
                             filtered_plt_file.writelines(filtered_rows)
 
 # Example usage:
-user_folder = 'Geolife Trajectories 1.3/Data_new/010'
-filter_plt_files(user_folder)
+# user_folder = 'Geolife Trajectories 1.3/Data_new/010'
+directory_path = "Geolife Trajectories 1.3/Data_new"
+# for user_folder in directory_path:
+    # filter_plt_files(user_folder)
+    # print(user_folder)
 
+
+for item in os.listdir(directory_path):
+    user_folder = os.path.join(directory_path, item)
+    # print(item_path)
+    filter_plt_files(user_folder)
 

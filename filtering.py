@@ -1,6 +1,9 @@
+import geopandas as gpd
 import os
 import shutil
 import numpy as np
+import pandas as pd
+from shapely.geometry import Point, MultiPolygon, Polygon
 
 def extract_label_users(dataset_dir):
     '''
@@ -92,7 +95,10 @@ users_paths = extract_label_users(original_data_dir)
 
 # filter out users with transportation mode of car / taxi
 users_car = extract_user_transportation_mode(users_paths, 'car')
+<<<<<<< Updated upstream
 # print(users_car)
+=======
+>>>>>>> Stashed changes
 
 
 # Path to the new data directory
@@ -123,5 +129,47 @@ for user_dir in users_car:
 
 
 # Process those time ranges and match them up with trajectories
+
+
+def filter_china_locations(dataset_path):
+    """
+    Filters trajectories that have locations in China
+
+    [input]
+        - dataset_path (str): path to file containing trajectory dataset with features driver ID, latitude, longitude, altitude, distance, and speed
+    
+    [output]
+        - dataset (pd.Dataframe): pandas dataframe containing filtered trajectories
+    """
+
+    # read csv file and convert contents to dataframe
+    df = pd.read_csv(dataset_path)
+
+    # read shapefile containing boundary of china
+    gdf = gpd.read_file('data/stanford_china_shapefile/china_boundary.shp')
+    geometry = gdf['geometry'][0]
+    
+    # extract coordinates 
+    df_coord = df[['Longitude', 'Latitude']]
+    coordinates = []
+    for i in range(len(df_coord)):
+        coordinate = (df_coord[i, 'Longitude'], df_coord[i, 'Latitude'])
+        coordinates.append(coordinate)
+    
+    # check which coordinates are in china and extract them
+    valid_coords_index = []
+    for i, coord in enumerate(coordinates):
+        point = Point(coord[0], coord[1])
+        if point.within(geometry):
+            valid_coords_index.append(i)
+    
+    # filter datapoints in dataframe that have location in china
+    df_filtered = df.iloc[valid_coords_index, :]
+
+    return df_filtered
+
+# csv file containing datapoints with features driver ID, latitude, longitude, altitude, distance, and speed
+dataset_path = 'data/china_trajectory_dataset.csv'
+filter_china_locations(dataset_path)
 
 

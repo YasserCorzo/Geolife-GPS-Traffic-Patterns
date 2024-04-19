@@ -2,6 +2,12 @@ import os
 import shutil
 import csv
 import numpy as np
+import matplotlib.pyplot as plt
+import pandas as pd
+
+from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
 
 def extract_label_users(dataset_dir):
@@ -350,6 +356,7 @@ def process_filtered_plt_files(directory_path, output_csv_path):
 root_directory_path = "Geolife Trajectories 1.3/Data_new"
 output_csv_path = "average_coordinates_altitude_time.csv"
 process_filtered_plt_files(root_directory_path, output_csv_path)
+
 
 
 

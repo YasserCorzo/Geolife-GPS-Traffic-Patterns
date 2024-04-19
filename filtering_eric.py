@@ -1,6 +1,8 @@
 import os
 import shutil
+import csv
 import numpy as np
+
 
 def extract_label_users(dataset_dir):
     '''
@@ -38,14 +40,14 @@ def extract_user_transportation_mode(users_paths, transportation_mode):
         file = open(label_file_path, 'r')
         content = file.readlines()[1:]
         for line in content:
-            if transportation_mode == 'car' or transportation_mode == 'taxi':
-                if 'car' in line or 'taxi' in line:
-                    res.append(user_path)
-                    break
-            else:
-                if transportation_mode in line:
-                    res.append(user_path)
-                    break
+            # if transportation_mode == 'car' or transportation_mode == 'taxi':
+            #     if 'car' in line or 'taxi' in line:
+            #         res.append(user_path)
+            #         break
+            # else:
+            if transportation_mode in line:
+                res.append(user_path)
+                break
     return res
 
 
@@ -66,7 +68,8 @@ def filter_labels_file(label_file_path):
         # Append the header line
         filtered_lines.append(lines[0])
         for line in lines[1:]:
-            if 'car' in line or 'taxi' in line:
+            # if 'car' in line or 'taxi' in line:
+            if 'car' in line:
                 filtered_lines.append(line)
     return filtered_lines
 
@@ -250,4 +253,104 @@ for item in os.listdir(directory_path):
     user_folder = os.path.join(directory_path, item)
     # print(item_path)
     filter_plt_files(user_folder)
+
+
+
+
+
+##### 4/19/2024 #####
+
+def calculate_average_coordinates_altitude(plt_file_path):
+    """
+    Calculate the average latitude, average longitude, and average altitude from a .plt file.
+
+    Args:
+    - plt_file_path (str): Path to the .plt file.
+
+    Returns:
+    - average_latitude (float): Average latitude.
+    - average_longitude (float): Average longitude.
+    - average_altitude (float): Average altitude.
+    """
+    total_latitude = 0
+    total_longitude = 0
+    total_altitude = 0
+    total_rows = 0
+
+    with open(plt_file_path, 'r') as plt_file:
+        for line in plt_file:
+            parts = line.strip().split(',')
+            latitude = float(parts[0])
+            longitude = float(parts[1])
+            altitude = float(parts[3])
+
+            total_latitude += latitude
+            total_longitude += longitude
+            total_altitude += altitude
+            total_rows += 1
+
+    average_latitude = total_latitude / total_rows
+    average_longitude = total_longitude / total_rows
+    average_altitude = total_altitude / total_rows
+
+    return average_latitude, average_longitude, average_altitude
+
+def calculate_total_time(plt_file_path):
+    """
+    Calculate the total time duration for a filtered .plt file.
+
+    Args:
+    - plt_file_path (str): Path to the filtered .plt file.
+
+    Returns:
+    - total_time (float): Total time duration.
+    """
+    timestamps = []
+
+    with open(plt_file_path, 'r') as plt_file:
+        for line in plt_file:
+            parts = line.strip().split(',')
+            timestamp = float(parts[-3])
+            timestamps.append(timestamp)
+
+    total_time = timestamps[-1] - timestamps[0]
+    return total_time
+
+def process_filtered_plt_files(directory_path, output_csv_path):
+    """
+    Process filtered .plt files in Trajectory_new directories for every user and store average
+    latitude, longitude, altitude, and total time in a new CSV file.
+
+    Args:
+    - directory_path (str): Path to the root directory containing Trajectory_new directories for each user.
+    - output_csv_path (str): Path to the output CSV file.
+    """
+    with open(output_csv_path, 'w', newline='') as csvfile:
+        csv_writer = csv.writer(csvfile)
+        csv_writer.writerow(["User", "Average Latitude", "Average Longitude", "Average Altitude", "Total Time"])
+
+        for user_folder in os.listdir(directory_path):
+            user_folder_path = os.path.join(directory_path, user_folder)
+            if os.path.isdir(user_folder_path):
+                trajectory_new_path = os.path.join(user_folder_path, "Trajectory_new")
+                if os.path.isdir(trajectory_new_path):
+                    print(f"Processing Trajectory_new directory for user: {user_folder}")
+                    for plt_file in os.listdir(trajectory_new_path):
+                        if plt_file.endswith(".plt"):
+                            plt_file_path = os.path.join(trajectory_new_path, plt_file)
+                            print(f"Processing filtered .plt file: {plt_file_path}")
+                            average_latitude, average_longitude, average_altitude = calculate_average_coordinates_altitude(plt_file_path)
+                            total_time = calculate_total_time(plt_file_path)
+                            csv_writer.writerow([user_folder, average_latitude, average_longitude, average_altitude, total_time])
+                            print("Finished processing filtered .plt file.")
+                else:
+                    print(f"No Trajectory_new directory found for user: {user_folder}")
+
+# Example usage:
+root_directory_path = "Geolife Trajectories 1.3/Data_new"
+output_csv_path = "average_coordinates_altitude_time.csv"
+process_filtered_plt_files(root_directory_path, output_csv_path)
+
+
+
 

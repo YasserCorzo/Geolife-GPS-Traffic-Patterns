@@ -89,7 +89,7 @@ for num in pc_nums:
 # Analyzing the Change in Explained Variance Ratio
 plt.figure(figsize=(4,2),dpi=150)
 plt.grid()
-plt.plot(pc_nums,var_ratio,marker='o')
+plt.plot(nums,var_ratio,marker='o')
 plt.xlabel('n_components')
 plt.ylabel('Explained variance ratio')
 plt.title('n_components vs. Explained Variance Ratio')

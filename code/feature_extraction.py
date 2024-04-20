@@ -19,7 +19,6 @@ users_paths = extract_label_users(original_data_dir)
 users_car = extract_user_transportation_mode(users_paths, 'car')
 # print(users_car)
 
-
 # Path to the new data directory
 new_data_dir = os.path.join(os.getcwd(), 'Geolife Trajectories 1.3/Data_new')
 
@@ -48,11 +47,9 @@ for user_dir in users_car:
 
 # Process those time ranges and match them up with trajectories
 
-# Example usage:
 directory_path = "Geolife Trajectories 1.3/Data_new"  # Replace with the path to your directory
 update_labels_files_in_directory(directory_path)
 
-# Example usage:
 # user_folder = 'Geolife Trajectories 1.3/Data_new/010'
 directory_path = "Geolife Trajectories 1.3/Data_new"
 # for user_folder in directory_path:
@@ -64,7 +61,6 @@ for item in os.listdir(directory_path):
     # print(item_path)
     filter_plt_files(user_folder)
 
-# Example usage:
 root_directory_path = "Geolife Trajectories 1.3/Data_new"
 output_csv_path = "average_coordinates_altitude_time.csv"
 process_filtered_plt_files(root_directory_path, output_csv_path)

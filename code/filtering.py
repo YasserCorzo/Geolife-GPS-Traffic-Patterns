@@ -14,6 +14,8 @@ import geopandas as gpd
 from datetime import datetime
 from shapely.geometry import Point, MultiPolygon, Polygon
 
+from geopy.distance import geodesic
+
 
 def extract_label_users(dataset_dir):
     '''
@@ -319,6 +321,52 @@ def calculate_total_time(plt_file_path):
     total_time = timestamps[-1] - timestamps[0]
     return total_time
 
+
+def calculate_distance_speed(plt_file_path):
+    """
+    Calculate the total distance and average speed from a .plt file.
+
+    Args:
+    - plt_file_path (str): Path to the .plt file.
+
+    Returns:
+    - total_distance (float): Total distance in kilometers.
+    - average_speed (float): Average speed in kilometers per hour.
+    """
+    distances = []
+    timestamps = []
+    total_distance = 0
+    total_time_seconds = 0
+
+    epsilon = 1e-6
+
+    with open(plt_file_path, 'r') as plt_file:
+        # lines = plt_file.readlines()[6:]  # Skip header lines
+        # for line in lines:
+        for line in plt_file:
+            parts = line.strip().split(',')
+            latitude = float(parts[0])
+            longitude = float(parts[1])
+            altitude = float(parts[3])
+            timestamp = float(parts[-3])
+            timestamps.append(timestamp)
+
+            if len(distances) > 0:
+                prev_lat, prev_lon, prev_alt, prev_timestamp = distances[-1]
+                distance = geodesic((prev_lat, prev_lon), (latitude, longitude)).kilometers
+                time_diff_seconds = timestamp - prev_timestamp
+                total_distance += distance
+                total_time_seconds += time_diff_seconds
+                # speeds = distance / time_diff_seconds * 3600  # Convert from meters per second to kilometers per hour
+                distances.append((latitude, longitude, altitude, timestamp))
+            else:
+                distances.append((latitude, longitude, altitude, timestamp))
+
+    average_speed = total_distance / (total_time_seconds + epsilon) * 3600  # Convert from meters per second to kilometers per hour
+
+    return total_distance, average_speed
+
+
 def process_filtered_plt_files(directory_path, output_csv_path):
     """
     Process filtered .plt files in Trajectory_new directories for every user and store average
@@ -330,7 +378,8 @@ def process_filtered_plt_files(directory_path, output_csv_path):
     """
     with open(output_csv_path, 'w', newline='') as csvfile:
         csv_writer = csv.writer(csvfile)
-        csv_writer.writerow(["User", "Average Latitude", "Average Longitude", "Average Altitude", "Total Time"])
+        # csv_writer.writerow(["User", "Average Latitude", "Average Longitude", "Average Altitude", "Total Time"])
+        csv_writer.writerow(["User", "Latitude", "Longitude", "Average Altitude", "Total Distance", "Average Speed", "Total Time"])
 
         for user_folder in os.listdir(directory_path):
             user_folder_path = os.path.join(directory_path, user_folder)
@@ -344,7 +393,12 @@ def process_filtered_plt_files(directory_path, output_csv_path):
                             print(f"Processing filtered .plt file: {plt_file_path}")
                             average_latitude, average_longitude, average_altitude = calculate_average_coordinates_altitude(plt_file_path)
                             total_time = calculate_total_time(plt_file_path)
-                            csv_writer.writerow([user_folder, average_latitude, average_longitude, average_altitude, total_time])
+
+                            # add speed and distance calculation
+                            total_distance, average_speed = calculate_distance_speed(plt_file_path)
+                            csv_writer.writerow([user_folder, average_latitude, average_longitude, average_altitude, total_distance, average_speed, total_time])
+
+                            # csv_writer.writerow([user_folder, average_latitude, average_longitude, average_altitude, total_time])
                             print("Finished processing filtered .plt file.")
                 else:
                     print(f"No Trajectory_new directory found for user: {user_folder}")

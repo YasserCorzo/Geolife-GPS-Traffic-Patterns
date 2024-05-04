@@ -53,52 +53,10 @@ def extract_user_transportation_mode(users_paths, transportation_mode):
         file = open(label_file_path, 'r')
         content = file.readlines()[1:]
         for line in content:
-            # if transportation_mode == 'car' or transportation_mode == 'taxi':
-            #     if 'car' in line or 'taxi' in line:
-            #         res.append(user_path)
-            #         break
-            # else:
             if transportation_mode in line:
                 res.append(user_path)
                 break
     return res
-
-# def filter_china_locations(dataset_path):
-#     """
-#     Filters trajectories that have locations in China
-
-#     [input]
-#         - dataset_path (str): path to file containing trajectory dataset with features driver ID, longitude, latitude, distance, and speed
-    
-#     [output]
-#         - dataset (pd.Dataframe): pandas dataframe containing filtered trajectories
-#     """
-
-#     # read csv file and convert contents to dataframe
-#     df = pd.read_csv(dataset_path)
-
-#     # read shapefile containing boundary of china
-#     gdf = gpd.read_file('data/stanford_china_shapefile/china_boundary.shp')
-#     geometry = gdf['geometry'][0]
-    
-#     # extract coordinates 
-#     df_coord = df[['Longitude', 'Latitude']]
-#     coordinates = []
-#     for i in range(len(df_coord)):
-#         coordinate = (df_coord[i, 'Longitude'], df_coord[i, 'Latitude'])
-#         coordinates.append(coordinate)
-    
-#     # check which coordinates are in china and extract them
-#     valid_coords_index = []
-#     for i, coord in enumerate(coordinates):
-#         point = Point(coord[0], coord[1])
-#         if point.within(geometry):
-#             valid_coords_index.append(i)
-    
-#     # filter datapoints in dataframe that have location in china
-#     df_filtered = df.iloc[valid_coords_index, :]
-
-#     return df_filtered
 
 def filter_china_locations(dataset_path):
     """
@@ -139,7 +97,6 @@ def filter_labels_file(label_file_path):
         # Append the header line
         filtered_lines.append(lines[0])
         for line in lines[1:]:
-            # if 'car' in line or 'taxi' in line:
             if 'car' in line:
                 filtered_lines.append(line)
     return filtered_lines
@@ -232,7 +189,6 @@ def filter_plt_files(user_folder):
 
             # Read start and end times from data_new.txt
             with open(data_file_path, 'r') as data_file:
-                # next(data_file)  # Skip header
                 for line in data_file:
                     start, end = line.strip().split(',')
                     start_end_times.append((float(start), float(end)))
@@ -341,28 +297,24 @@ def calculate_distance_speed(plt_file_path):
     epsilon = 1e-6
 
     with open(plt_file_path, 'r') as plt_file:
-        # lines = plt_file.readlines()[6:]  # Skip header lines
-        # for line in lines:
         for line in plt_file:
             parts = line.strip().split(',')
             latitude = float(parts[0])
             longitude = float(parts[1])
-            altitude = float(parts[3])
             timestamp = float(parts[-3])
             timestamps.append(timestamp)
 
             if len(distances) > 0:
-                prev_lat, prev_lon, prev_alt, prev_timestamp = distances[-1]
+                prev_lat, prev_lon, prev_timestamp = distances[-1]
                 distance = geodesic((prev_lat, prev_lon), (latitude, longitude)).kilometers
                 time_diff_seconds = timestamp - prev_timestamp
                 total_distance += distance
                 total_time_seconds += time_diff_seconds
-                # speeds = distance / time_diff_seconds * 3600  # Convert from meters per second to kilometers per hour
-                distances.append((latitude, longitude, altitude, timestamp))
+                distances.append((latitude, longitude, timestamp))
             else:
-                distances.append((latitude, longitude, altitude, timestamp))
+                distances.append((latitude, longitude, timestamp))
 
-    average_speed = total_distance / (total_time_seconds + epsilon) * 3600  # Convert from meters per second to kilometers per hour
+    average_speed = total_distance / (total_time_seconds + epsilon) * 3600  # Convert from kilometers per second to kilometers per hour
 
     return total_distance, average_speed
 
@@ -378,7 +330,6 @@ def process_filtered_plt_files(directory_path, output_csv_path):
     """
     with open(output_csv_path, 'w', newline='') as csvfile:
         csv_writer = csv.writer(csvfile)
-        # csv_writer.writerow(["User", "Average Latitude", "Average Longitude", "Average Altitude", "Total Time"])
         csv_writer.writerow(["User", "Latitude", "Longitude", "Average Altitude", "Total Distance", "Average Speed", "Total Time"])
 
         for user_folder in os.listdir(directory_path):
@@ -396,9 +347,10 @@ def process_filtered_plt_files(directory_path, output_csv_path):
 
                             # add speed and distance calculation
                             total_distance, average_speed = calculate_distance_speed(plt_file_path)
+
+                            # write everything to csv
                             csv_writer.writerow([user_folder, average_latitude, average_longitude, average_altitude, total_distance, average_speed, total_time])
 
-                            # csv_writer.writerow([user_folder, average_latitude, average_longitude, average_altitude, total_time])
                             print("Finished processing filtered .plt file.")
                 else:
                     print(f"No Trajectory_new directory found for user: {user_folder}")

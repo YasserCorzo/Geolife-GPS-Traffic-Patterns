@@ -23,15 +23,6 @@ from filtering import *
 
 
 ########################################### K-means ################################################
-# cluster filtered dataset into 30 clusters (representing the 30 cities in China the datapoints are taken from)
-# kmeans = KMeans(n_clusters=30).fit(df_filtered_china[['Longitude', 'Latitude']])
-# label = kmeans.labels_
-# u_labels = np.unique(label)
-
-# for i in u_labels:
-#     plt.scatter(df_filtered_china[label == i , 1] , df_filtered_china[label == i , 2] , label = i)
-# plt.legend()
-# plt.show()
 
 def visualize_clusters(df_filtered_china):
     """
@@ -60,7 +51,6 @@ def visualize_clusters(df_filtered_china):
 
 dataset_path = 'test.csv'
 
-# step 4: Filter out specific cities / locations (China)
 df_filtered_china = filter_china_locations(dataset_path)
 
 visualize_clusters(df_filtered_china)

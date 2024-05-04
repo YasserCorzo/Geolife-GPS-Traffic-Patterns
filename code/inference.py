@@ -1,56 +1,71 @@
 
 import numpy as np
+import matplotlib.pyplot as plt
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.svm import SVR
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-# import joblib
+from sklearn.preprocessing import StandardScaler
 
-# Step 1: Load the Dataset
-data = pd.read_csv("test_full.csv")
+def prediction(model_index):
+    data = pd.read_csv("test_full.csv")
 
-# Step 2: Preprocess the Data
-# Handle missing values, encode categorical variables, split into features (X) and labels (y)
-X = data.drop(columns=["Total Time"])  # Assuming "User" is not a feature
-y = data["Total Time"]
+    X = data.drop(columns=["User", "Total Time"])
+    y = data["Total Time"]
 
-# Step 3: Split the Data
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=80)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=80)
 
-# Step 4: Choose a Model and Train
-# model = LinearRegression()
-# model = SVR(kernel='rbf')  # You can choose different kernels (e.g., 'linear', 'poly', 'rbf')
-model = RandomForestRegressor()
+    scaler = StandardScaler()
+    X_train_scaled = scaler.fit_transform(X_train)
+    X_test_scaled = scaler.transform(X_test)
+
+    if model_index == 0:
+        model = LinearRegression()
+    elif model_index == 1:
+        model = SVR(kernel='linear')
+    else:
+        model = RandomForestRegressor(random_state=80)
+
+    model.fit(X_train_scaled, y_train)
+
+    y_pred = model.predict(X_test_scaled)
+
+    mae = mean_absolute_error(y_test, y_pred)
+    mse = mean_squared_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
+
+    variance_y = np.var(y_test)
+    nmse = mse / variance_y
+
+    print("Mean Absolute Error:", mae)
+    print("Mean Squared Error:", mse)
+    print("R-squared:", r2)
+
+    print("Normalized Mean Squared Error (NMSE):", nmse)
+
+    return y_test, y_pred
 
 
-model.fit(X_train, y_train)
+def plot_inference(model_index):
+    y_test, y_pred = prediction(model_index)
 
-# Step 5: Evaluate the Model
-y_pred = model.predict(X_test)
+    y_test_array = y_test.to_numpy()
 
-mae = mean_absolute_error(y_test, y_pred)
-mse = mean_squared_error(y_test, y_pred)
-r2 = r2_score(y_test, y_pred)
-print("Mean Absolute Error:", mae)
-print("Mean Squared Error:", mse)
-print("R-squared:", r2)
+    sorted_indices = np.argsort(y_test_array)
+    y_test_sorted = y_test_array[sorted_indices]
+    y_pred_sorted = y_pred[sorted_indices]
 
-# Step 6: Fine-Tune the Model (if necessary)
-
-# Step 7: Make Predictions (on new data if available)
-
-# Step 8: Save the Model
-# joblib.dump(model, "your_model.pkl")
+    plt.figure()
+    plt.plot(y_test_sorted, y_pred_sorted, 'o', label='predicted vs. true')
+    plt.plot([min(y_test_sorted), max(y_test_sorted)], [min(y_test_sorted), max(y_test_sorted)], label='y=x')
+    plt.xlabel('y_test')
+    plt.ylabel('y_pred')
+    plt.title('Predicted vs. true regression values')
+    plt.legend()
+    plt.show()
 
 
-# Assuming y_test and y_pred are the true and predicted target values, respectively
-
-# Step 5: Evaluate the Model (Calculate NMSE)
-mse = mean_squared_error(y_test, y_pred)
-variance_y = np.var(y_test)
-nmse = mse / variance_y
-
-print("Normalized Mean Squared Error (NMSE):", nmse)
+plot_inference(2)
 
